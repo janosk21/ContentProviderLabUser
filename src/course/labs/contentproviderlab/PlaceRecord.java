@@ -2,6 +2,7 @@ package course.labs.contentproviderlab;
 
 import android.graphics.Bitmap;
 import android.location.Location;
+import android.util.Log;
 
 public class PlaceRecord {
 
@@ -28,8 +29,10 @@ public class PlaceRecord {
 	}
 
 	public PlaceRecord(Location location) {
+    Log.i("Lab-ContentProvider", "PR-0");
 		setLat(location.getLatitude());
 		setLon(location.getLongitude());
+		Log.i("Lab-ContentProvider", "PR-1");
 	}
 
 	public void setLocation(Location location) {

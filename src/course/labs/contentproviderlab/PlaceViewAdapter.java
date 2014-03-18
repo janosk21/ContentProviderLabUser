@@ -16,221 +16,209 @@ import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import course.labs.contentproviderlab.provider.PlaceBadgesContract;
 
 public class PlaceViewAdapter extends CursorAdapter {
 
-	private static final String APP_DIR = "ContentProviderLab/Badges";
-	private ArrayList<PlaceRecord> list = new ArrayList<PlaceRecord>();
-	private static LayoutInflater inflater = null;
-	private Context mContext;
-	private String mBitmapStoragePath;
+  private static final String APP_DIR = "ContentProviderLab/Badges";
+  private ArrayList<PlaceRecord> list = new ArrayList<PlaceRecord>();
+  private static LayoutInflater inflater = null;
+  private Context mContext;
+  private String mBitmapStoragePath;
 
-	public PlaceViewAdapter(Context context, Cursor cursor, int flags) {
-		super(context, cursor, flags);
+  public PlaceViewAdapter(Context context, Cursor cursor, int flags) {
+    super(context, cursor, flags);
 
-		mContext = context;
-		inflater = LayoutInflater.from(mContext);
+    mContext = context;
+    inflater = LayoutInflater.from(mContext);
 
-		if (Environment.getExternalStorageState().equals(
-				Environment.MEDIA_MOUNTED)) {
+    if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
 
-			try {
+      try {
+        String root = mContext.getExternalFilesDir(null).getCanonicalPath();
 
-				String root = mContext.getExternalFilesDir(null)
-						.getCanonicalPath();
+        if (null != root) {
 
-				if (null != root) {
+          File bitmapStorageDir = new File(root, APP_DIR);
+          bitmapStorageDir.mkdirs();
+          mBitmapStoragePath = bitmapStorageDir.getCanonicalPath();
 
-					File bitmapStorageDir = new File(root, APP_DIR);
-					bitmapStorageDir.mkdirs();
-					mBitmapStoragePath = bitmapStorageDir.getCanonicalPath();
-
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	@Override
-	public Cursor swapCursor(Cursor newCursor) {
-		super.swapCursor(newCursor);
-
-		if (null != newCursor) {
-
-        // TODO - clear the ArrayList list so it contains
-		// the current set of PlaceRecords. Use the 
-		// getPlaceRecordFromCursor() method to add the
-		// current place to the list
-		
-
-            
-            
-            
-            
-            
-            // Set the NotificationURI for the new cursor
-			newCursor.setNotificationUri(mContext.getContentResolver(),
-					PlaceBadgesContract.CONTENT_URI);
-
-		}
-		return newCursor;
-
-	}
-
-	// returns a new PlaceRecord for the data at the cursor's
-	// current position
-	private PlaceRecord getPlaceRecordFromCursor(Cursor cursor) {
-
-		String flagBitmapPath = cursor.getString(cursor
-				.getColumnIndex(PlaceBadgesContract.FLAG_BITMAP_PATH));
-		String countryName = cursor.getString(cursor
-				.getColumnIndex(PlaceBadgesContract.COUNTRY_NAME));
-		String placeName = cursor.getString(cursor
-				.getColumnIndex(PlaceBadgesContract.PLACE_NAME));
-		double lat = cursor.getDouble(cursor
-				.getColumnIndex(PlaceBadgesContract.LAT));
-		double lon = cursor.getDouble(cursor
-				.getColumnIndex(PlaceBadgesContract.LON));
-
-		return new PlaceRecord(null, flagBitmapPath, countryName, placeName,
-				lat, lon);
-
-	}
-
-	public int getCount() {
-		return list.size();
-	}
-
-	public Object getItem(int position) {
-		return list.get(position);
-	}
-
-	public long getItemId(int position) {
-		return position;
-	}
-
-	static class ViewHolder {
-
-		ImageView flag;
-		TextView country;
-		TextView place;
-
-	}
-
-	public boolean intersects(Location location) {
-		for (PlaceRecord item : list) {
-			if (item.intersects(location)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	public void add(PlaceRecord listItem) {
-
-		String lastPathSegment = Uri.parse(listItem.getFlagUrl())
-				.getLastPathSegment();
-		String filePath = mBitmapStoragePath + "/" + lastPathSegment;
-
-		if (storeBitmapToFile(listItem.getFlagBitmap(), filePath)) {
-
-			listItem.setFlagBitmapPath(filePath);
-			list.add(listItem);
-
-			// TODO - Insert new record into the ContentProvider
-
-			
-
-		
-        
-        
-        
         }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 
-	}
+  @Override
+  public Cursor swapCursor(Cursor newCursor) {
+    super.swapCursor(newCursor);
 
-	public ArrayList<PlaceRecord> getList() {
-		return list;
-	}
+    //Log.i("Lab-ContentProvider", "PVA-swapCursor-0");
 
-	public void removeAllViews() {
+    if (null != newCursor) {
+      //Log.i("Lab-ContentProvider", "PVA-swapCursor-1");
+      // TODOS - clear the ArrayList list so it contains
+      // the current set of PlaceRecords. Use the
+      // getPlaceRecordFromCursor() method to add the
+      // current place to the list
+      this.list.clear();
+      //Log.i("Lab-ContentProvider", "PVA-swapCursor-2");
+      this.list.add(getPlaceRecordFromCursor(newCursor));
+      //Log.i("Lab-ContentProvider", "PVA-swapCursor-3");
+      // Set the NotificationURI for the new cursor
+      newCursor.setNotificationUri(mContext.getContentResolver(), PlaceBadgesContract.CONTENT_URI);
+      //Log.i("Lab-ContentProvider", "PVA-swapCursor-4");
+    }
+    //Log.i("Lab-ContentProvider", "PVA-swapCursor-5");
+    return newCursor;
 
-		list.clear();
+  }
 
-		// TODO - delete all records in the ContentProvider
+  // returns a new PlaceRecord for the data at the cursor's
+  // current position
+  private PlaceRecord getPlaceRecordFromCursor(Cursor cursor) {
+    try {
+      if (cursor.isBeforeFirst() && !cursor.isAfterLast()) cursor.moveToFirst();
+      String flagBitmapPath = cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.FLAG_BITMAP_PATH));
+      String countryName = cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.COUNTRY_NAME));
+      String placeName = cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.PLACE_NAME));
+      double lat = cursor.getDouble(cursor.getColumnIndex(PlaceBadgesContract.LAT));
+      double lon = cursor.getDouble(cursor.getColumnIndex(PlaceBadgesContract.LON));
 
+      return new PlaceRecord(null, flagBitmapPath, countryName, placeName, lat, lon);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return null;
+  }
 
-        
-        
-        
-	}
+  public int getCount() {
+    return list.size();
+  }
 
-	@Override
-	public void bindView(View view, Context context, Cursor cursor) {
+  public Object getItem(int position) {
+    return list.get(position);
+  }
 
-		ViewHolder holder = (ViewHolder) view.getTag();
+  public long getItemId(int position) {
+    return position;
+  }
 
-		holder.flag.setImageBitmap(getBitmapFromFile(cursor.getString(cursor
-				.getColumnIndex(PlaceBadgesContract.FLAG_BITMAP_PATH))));
-		holder.country.setText("Country: "
-				+ cursor.getString(cursor
-						.getColumnIndex(PlaceBadgesContract.COUNTRY_NAME)));
-		holder.place.setText("Place: "
-				+ cursor.getString(cursor
-						.getColumnIndex(PlaceBadgesContract.PLACE_NAME)));
+  static class ViewHolder {
 
-	}
+    ImageView flag;
+    TextView country;
+    TextView place;
 
-	@Override
-	public View newView(Context context, Cursor cursor, ViewGroup parent) {
+  }
 
-		View newView;
-		ViewHolder holder = new ViewHolder();
+  public boolean intersects(Location location) {
+    for (PlaceRecord item : list) {
+      if (item.intersects(location)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-		newView = inflater.inflate(R.layout.place_badge_view, null);
-		holder.flag = (ImageView) newView.findViewById(R.id.flag);
-		holder.country = (TextView) newView.findViewById(R.id.country_name);
-		holder.place = (TextView) newView.findViewById(R.id.place_name);
+  public void add(PlaceRecord listItem) {
+    //Log.i("Lab-ContentProvider", "listItem==null:" + (listItem == null));
+    //Log.i("Lab-ContentProvider", "listItem.getFlagUrl():" + listItem.getFlagUrl());
+    String lastPathSegment = Uri.parse(listItem.getFlagUrl()).getLastPathSegment();
+    //Log.i("Lab-ContentProvider", "PVA-0");
+    String filePath = mBitmapStoragePath + "/" + lastPathSegment;
+    //Log.i("Lab-ContentProvider", "PVA-1");
 
-		newView.setTag(holder);
+    if (storeBitmapToFile(listItem.getFlagBitmap(), filePath)) {
+      //Log.i("Lab-ContentProvider", "PVA-2");
 
-		return newView;
-	}
+      listItem.setFlagBitmapPath(filePath);
+      list.add(listItem);
 
-	private Bitmap getBitmapFromFile(String filePath) {
-		return BitmapFactory.decodeFile(filePath);
-	}
+      // TODOS - Insert new record into the ContentProvider
+      ContentValues cv = new ContentValues();
+      cv.put(PlaceBadgesContract.FLAG_BITMAP_PATH, listItem.getFlagBitmapPath());
+      cv.put(PlaceBadgesContract.COUNTRY_NAME, listItem.getCountryName());
+      cv.put(PlaceBadgesContract.PLACE_NAME, listItem.getPlace());
+      cv.put(PlaceBadgesContract.LAT, listItem.getLat());
+      cv.put(PlaceBadgesContract.LON, listItem.getLon());
+      mContext.getContentResolver().insert(PlaceBadgesContract.BASE_URI, cv);
+    }
+    //Log.i("Lab-ContentProvider", "PVA-3");
+  }
 
-	private boolean storeBitmapToFile(Bitmap bitmap, String filePath) {
+  public ArrayList<PlaceRecord> getList() {
+    return list;
+  }
 
-		if (Environment.getExternalStorageState().equals(
-				Environment.MEDIA_MOUNTED)) {
+  public void removeAllViews() {
 
-			try {
+    list.clear();
 
-				BufferedOutputStream bos = new BufferedOutputStream(
-						new FileOutputStream(filePath));
+    // TODOS - delete all records in the ContentProvider
+    mContext.getContentResolver().delete(PlaceBadgesContract.BASE_URI, null, null);
+  }
 
-				bitmap.compress(CompressFormat.PNG, 100, bos);
+  @Override
+  public void bindView(View view, Context context, Cursor cursor) {
 
-				bos.flush();
-				bos.close();
+    ViewHolder holder = (ViewHolder) view.getTag();
 
-			} catch (FileNotFoundException e) {
-				return false;
-			} catch (IOException e) {
-				return false;
-			}
-			return true;
-		}
-		return false;
-	}
+    holder.flag.setImageBitmap(getBitmapFromFile(cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.FLAG_BITMAP_PATH))));
+    holder.country.setText("Country: " + cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.COUNTRY_NAME)));
+    holder.place.setText("Place: " + cursor.getString(cursor.getColumnIndex(PlaceBadgesContract.PLACE_NAME)));
+
+  }
+
+  @Override
+  public View newView(Context context, Cursor cursor, ViewGroup parent) {
+
+    View newView;
+    ViewHolder holder = new ViewHolder();
+
+    newView = inflater.inflate(R.layout.place_badge_view, null);
+    holder.flag = (ImageView) newView.findViewById(R.id.flag);
+    holder.country = (TextView) newView.findViewById(R.id.country_name);
+    holder.place = (TextView) newView.findViewById(R.id.place_name);
+
+    newView.setTag(holder);
+
+    return newView;
+  }
+
+  private Bitmap getBitmapFromFile(String filePath) {
+    return BitmapFactory.decodeFile(filePath);
+  }
+
+  private boolean storeBitmapToFile(Bitmap bitmap, String filePath) {
+
+    if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+
+      try {
+
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
+
+        bitmap.compress(CompressFormat.PNG, 100, bos);
+
+        bos.flush();
+        bos.close();
+
+      } catch (FileNotFoundException e) {
+        return false;
+      } catch (IOException e) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
 }
